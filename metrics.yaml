@@ -1,0 +1,94 @@
+groups:
+  - metrics:
+      - name: tables_size_byes
+        description: Current table size in bytes
+        metric: Gauge
+        observation: bytes
+      - name: table_parts
+        description: Current parts in table
+        metric: Gauge
+        observation: parts
+      - name: table_rows
+        description: Current rows in table
+        metric: Gauge
+        observation: rows
+    labels:
+      - database
+      - table
+    query:
+      select 
+        database, 
+        table, 
+        sum(bytes) as bytes, 
+        count() as parts, 
+        sum(rows) as rows 
+      from system.parts 
+      where active = 1 
+      group by database, table
+  - metrics:
+      - name: query_read_rows
+        description: Read rows of past queries
+        observation: read_rows
+        metric: Histogram
+        buckets: Exponential
+        start: 1
+        factor: 10
+        count: 10
+      - description: Read bytes of past queries
+        name: query_read_bytes
+        observation: read_rows
+        metric: Histogram
+        buckets: Exponential
+        start: 1
+        factor: 10
+        count: 10
+      - description: Written rows of past queries
+        name: query_written_rows
+        observation: read_bytes
+        metric: Histogram
+        buckets: Exponential
+        start: 1
+        factor: 10
+        count: 10
+      - description: Written bytes of past queries
+        name: query_written_bytes
+        observation: written_rows
+        metric: Histogram
+        buckets: Exponential
+        start: 1
+        factor: 10
+        count: 10
+      - description: Memory usage of past queries
+        name: query_memory_usage
+        observation: written_bytes
+        metric: Histogram
+        buckets: Exponential
+        start: 1
+        factor: 10
+        count: 10
+      - description: Run time of past queries in seconds
+        name: query_duration_s
+        observation: memory_usage
+        metric: Histogram
+        buckets: Exponential
+        start: 1
+        factor: 10
+        count: 10
+    period_s: 30
+    labels:
+      - type
+      - user
+    query:
+      SELECT 
+        type, 
+        user, 
+        sum(read_rows) AS read_rows, 
+        sum(read_bytes) AS read_bytes,
+        sum(written_rows) AS written_rows, 
+        sum(written_bytes) AS written_bytes, 
+        sum(memory_usage) AS memory_usage, 
+        sum(query_duration_ms)/1000 AS query_duration_s 
+      FROM system.query_log
+      WHERE type != 'QueryStart' 
+      AND event_time > subtractSeconds(now(), 30) 
+      GROUP BY user, type
