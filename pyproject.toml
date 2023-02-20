@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ch-exporter"
-version = "0.1.0"
+version = "0.1.1"
 description = ""
 authors = ["Jannik Hoffjann <hi@hfjn.de>"]
 readme = "README.md"
@@ -14,6 +14,8 @@ aiohttp = "^3.8.3"
 aiochclient = {extras = ["aiohttp"], version = "^2.2.0"}
 black = "^22.12.0"
 pyyaml = "^6.0"
+loguru = "^0.6.0"
+pendulum = "^2.1.2"
 
 
 [build-system]

@@ -1,7 +1,7 @@
 import asyncio
 
 from aiochclient import ChClient, ChClientError
-from aiohttp import ClientSession
+from aiohttp import ClientConnectorError, ClientSession
 from loguru import logger
 from pendulum import now
 
@@ -38,6 +38,8 @@ class MetricsGroupCollector:
                         for metric in self.metrics:
                             metric.prometheus_metric.labels(*labels).__getattribute__(metric.observe_function)(line[metric.observation])
                 except ChClientError as e:
-                    logger.error("Error while collecting metric", e)
+                    logger.error("Error while collecting metric: ", e)
+                except ClientConnectorError as e:
+                    logger.error(f"HTTP Error reaching clickhouse {url}: ", e)
                 time_taken = (now() - start_time).seconds
                 await asyncio.sleep(self.period - time_taken)

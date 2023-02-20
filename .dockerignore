@@ -1,0 +1,7 @@
+justfile
+.idea/
+.env
+**/__pycache__/
+.git/
+.gitignore
+.tool-versions

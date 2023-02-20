@@ -1,4 +1,4 @@
-FROM python:3.11 AS builder
+FROM python:3.11
 
 # Create workdir
 ENV APP_DIRECTORY=/app
@@ -13,15 +13,6 @@ RUN poetry config virtualenvs.in-project true \
 
 USER 1000:1000
 
-FROM python:3.11 as publish
+CMD ["poetry", "run", "python", "/app/main.py"]
 
-# Copy dependencies
-COPY --from=builder /app /app
-ADD . /app
 
-USER 1000:1000
-
-ENV PYTHONPATH=/app
-COPY . .
-
-CMD ["python3", "/app/main.py"]

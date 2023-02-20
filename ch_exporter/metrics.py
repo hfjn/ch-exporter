@@ -17,16 +17,16 @@ METRIC_FUNCTIONS = {
 }
 
 DEFAULT_LABELS = ["clickhouse_node"]
-PREFIX = "clickhouse_exporter"
+PREFIX = "ch_exporter"
 
 CLICKHOUSE_HEALTH = Enum(
-    "clickhouse_exporter_node_health",
+    PREFIX + "_node_health",
     "Clickhouse Nodes Health Status",
     states=["healthy", "unhealthy"],
     labelnames=DEFAULT_LABELS,
 )
 CLICKHOUSE_REPLICATION_HEALTH = Enum(
-    "clickhouse_exporter_replication_status",
+    PREFIX + "_replication_status",
     "Clickhouse Nodes Replication Status",
     states=["healthy", "unhealthy"],
     labelnames=DEFAULT_LABELS,
@@ -135,5 +135,5 @@ def _linear_buckets(start: float, size: float, count: int) -> List[float]:
 
 def generate_prometheus_metric(metric: CHMetric, labels: List[str]):
     class_ = getattr(prometheus_client, metric.metric)
-    logger.debug(f"Creating Metric {metric.name} of type {metric.metric} with labels {labels}")
-    return class_(metric.name, metric.description, labels)
+    logger.debug(f"Creating Metric {metric.prefixed_name} of type {metric.metric} with labels {labels}")
+    return class_(metric.prefixed_name, metric.description, labels)
