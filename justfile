@@ -14,7 +14,8 @@ build:
     docker build -t hfjn/ch_exporter:{{version}} -t hfjn/ch_exporter:latest .
 
 push:
-    docker push hfjn/ch_exporter:{{version}} --all-tags
+    docker push hfjn/ch_exporter:{{version}}
+    docker push hfjn/ch_exporter:latest
 
 _bump_version:
   #! /usr/bin/env python3
