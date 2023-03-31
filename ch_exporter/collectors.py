@@ -16,10 +16,15 @@ class MetricsGroupCollector:
         self.labels = group.labels
         self.metrics = group.metrics
         self.period = group.period_s
+        self.specific_host = group.specific_host
         for metric in self.metrics:
             # Need to generate with all labels here to have
             # spot for automatically filled in labels (e.g. node)
             metric.prometheus_metric = generate_prometheus_metric(metric, group.all_labels)
+
+    @property
+    def metric_names(self) -> str:
+        return ", ".join([m.name for m in self.metrics])
 
     async def collect(self, node, url):
         logger.debug(f"Starting collection of {', '.join([metric.name for metric in self.metrics])}")

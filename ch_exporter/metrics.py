@@ -100,6 +100,7 @@ class CHMetric(BaseModel):
 class ClickhouseMetricGroup(BaseModel):
     labels: List[str]
     query: str
+    specific_host: Optional[str] = None
     metrics: List[CHMetric]
     timeout_s: int = 5
     period_s: int = 10
