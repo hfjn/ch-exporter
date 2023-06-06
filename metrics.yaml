@@ -1,6 +1,6 @@
 groups:
   - metrics:
-      - name: tables_size_byes
+      - name: tables_size_bytes
         description: Current table size in bytes
         metric: Gauge
         observation: bytes
