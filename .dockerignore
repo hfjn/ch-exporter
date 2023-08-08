@@ -5,3 +5,4 @@ justfile
 .git/
 .gitignore
 .tool-versions
+metrics.yaml

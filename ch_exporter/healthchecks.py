@@ -8,7 +8,7 @@ from ch_exporter.metrics import CLICKHOUSE_HEALTH, CLICKHOUSE_REPLICATION_HEALTH
 
 async def _check_url(session, url) -> bool:
     try:
-        async with session.get(url, timeout=5) as resp:
+        async with session.get(url, timeout=15) as resp:
             await resp.text()
             logger.debug(resp.status)
             return resp.status == 200
@@ -41,4 +41,4 @@ async def health_checks(host, url):
                 CLICKHOUSE_REPLICATION_HEALTH.labels(host).state("unhealthy")
                 logger.debug("Replication Status unhealthy")
 
-        await asyncio.sleep(5)
+        await asyncio.sleep(30)

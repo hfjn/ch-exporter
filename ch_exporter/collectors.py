@@ -38,13 +38,15 @@ class MetricsGroupCollector:
                 start_time = now()
                 try:
                     result = await client.fetch(self.query)
+                    for metric in self.metrics:
+                        metric.prometheus_metric.clear()
                     for line in result:
                         labels = [line[label] for label in self.labels] + [node]
                         for metric in self.metrics:
                             metric.prometheus_metric.labels(*labels).__getattribute__(metric.observe_function)(line[metric.observation])
                 except ChClientError as e:
-                    logger.error("Error while collecting metric: ", e)
+                    logger.exception(f"{self.metric_names}: Error while collecting metric: ", e)
                 except ClientConnectorError as e:
-                    logger.error(f"HTTP Error reaching clickhouse {url}: ", e)
+                    logger.exception(f"{self.metric_names}: HTTP Error reaching clickhouse {url}: ", e)
                 time_taken = (now() - start_time).seconds
                 await asyncio.sleep(self.period - time_taken)
