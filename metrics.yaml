@@ -1,4 +1,5 @@
 groups:
+9
   - metrics:
       - name: tables_size_bytes
         description: Current table size in bytes
