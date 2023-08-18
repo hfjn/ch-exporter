@@ -28,8 +28,9 @@ class MetricsGroupCollector:
 
     async def collect(self, node, url):
         logger.debug(f"Starting collection of {', '.join([metric.name for metric in self.metrics])}")
-        async with ClientSession():
+        async with ClientSession() as session:
             client = ChClient(
+                session=session,
                 url=url,
                 user=self._config.ch_user,
                 password=self._config.ch_password,
