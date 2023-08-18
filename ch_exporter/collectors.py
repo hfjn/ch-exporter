@@ -48,5 +48,8 @@ class MetricsGroupCollector:
                     logger.exception(f"{self.metric_names}: Error while collecting metric: ", e)
                 except ClientConnectorError as e:
                     logger.exception(f"{self.metric_names}: HTTP Error reaching clickhouse {url}: ", e)
+                except asyncio.TimeoutError as e:
+                    logger.exception(f"{self.metric_names}: HTTP Timeout reaching clickhouse {url}: ", e)
+
                 time_taken = (now() - start_time).seconds
                 await asyncio.sleep(self.period - time_taken)
