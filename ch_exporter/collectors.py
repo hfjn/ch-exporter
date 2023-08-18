@@ -28,8 +28,9 @@ class MetricsGroupCollector:
 
     async def collect(self, node, url):
         logger.debug(f"Starting collection of {', '.join([metric.name for metric in self.metrics])}")
-        async with ClientSession():
+        async with ClientSession() as session:
             client = ChClient(
+                session=session,
                 url=url,
                 user=self._config.ch_user,
                 password=self._config.ch_password,
@@ -48,5 +49,8 @@ class MetricsGroupCollector:
                     logger.exception(f"{self.metric_names}: Error while collecting metric: ", e)
                 except ClientConnectorError as e:
                     logger.exception(f"{self.metric_names}: HTTP Error reaching clickhouse {url}: ", e)
+                except asyncio.TimeoutError as e:
+                    logger.exception(f"{self.metric_names}: HTTP Timeout reaching clickhouse {url}: ", e)
+
                 time_taken = (now() - start_time).seconds
                 await asyncio.sleep(self.period - time_taken)
