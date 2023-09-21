@@ -1,12 +1,13 @@
+from collections import defaultdict
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, List, Optional, Sequence
 
 import prometheus_client
 import yaml
 from loguru import logger
 from prometheus_client import Enum
-from prometheus_client.metrics_core import METRIC_TYPES, Metric
-from pydantic import BaseModel, root_validator, validator
+from prometheus_client.metrics_core import METRIC_TYPES
+from pydantic import BaseModel, PrivateAttr, root_validator, validator
 
 METRIC_FUNCTIONS = {
     "Summary": "observe",
@@ -43,8 +44,9 @@ class CHMetric(BaseModel):
     factor: Optional[float] = None
     size: Optional[float] = None
     count: Optional[int] = None
-    prometheus_metric: None = None
 
+    _prometheus_metric: Any = PrivateAttr()
+    _active_label_values_by_node: dict[str, set[tuple[str]]] = PrivateAttr(default_factory=lambda: defaultdict(set))
 
     @property
     def prefixed_name(self) -> str:
@@ -54,11 +56,20 @@ class CHMetric(BaseModel):
     def observe_function(self) -> str:
         return METRIC_FUNCTIONS[self.metric]
 
-    @validator("prometheus_metric", always=True)
-    def validate_prometheus_metric(cls, v) -> None:
-        if v:
-            raise ValueError("This value must be kept empty. It's a placeholder and set during runtime")
-        return v
+    def init_for_collector(self, all_labels: Sequence[str]):
+        class_ = getattr(prometheus_client, self.metric)
+        logger.debug(f"Creating Metric {self.prefixed_name} of type {self.metric} with labels {all_labels}")
+        self._prometheus_metric = class_(self.prefixed_name, self.description, all_labels)
+
+    def observe(self, node: str, label_values: Sequence[str], value: Any):
+        all_label_values = tuple(str(v) for v in label_values) + (node,)
+        self._prometheus_metric.labels(*all_label_values).__getattribute__(self.observe_function)(value)
+        self._active_label_values_by_node[node].add(all_label_values)
+
+    def clear(self, node: str):
+        for label_values in self._active_label_values_by_node[node]:
+            self._prometheus_metric.remove(*label_values)
+        self._active_label_values_by_node[node].clear()
 
     @validator("metric")
     def validate_metric(cls, v):
@@ -106,9 +117,12 @@ class ClickhouseMetricGroup(BaseModel):
     period_s: int = 10
 
     @property
-    def all_labels(self):
+    def all_labels(self) -> List[str]:
         return self.labels + DEFAULT_LABELS
 
+    def init_for_collector(self):
+        for metric in self.metrics:
+            metric.init_for_collector(self.all_labels)
 
 class Metrics(BaseModel):
     groups: List[ClickhouseMetricGroup]
@@ -132,9 +146,3 @@ def _linear_buckets(start: float, size: float, count: int) -> List[float]:
         buckets.append(start)
         start += size
     return buckets
-
-
-def generate_prometheus_metric(metric: CHMetric, labels: List[str]):
-    class_ = getattr(prometheus_client, metric.metric)
-    logger.debug(f"Creating Metric {metric.prefixed_name} of type {metric.metric} with labels {labels}")
-    return class_(metric.prefixed_name, metric.description, labels)
