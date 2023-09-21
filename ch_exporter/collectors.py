@@ -6,7 +6,7 @@ from loguru import logger
 from pendulum import now
 
 from ch_exporter.config import ExporterConfig
-from ch_exporter.metrics import ClickhouseMetricGroup, generate_prometheus_metric
+from ch_exporter.metrics import ClickhouseMetricGroup
 
 
 class MetricsGroupCollector:
@@ -17,10 +17,8 @@ class MetricsGroupCollector:
         self.metrics = group.metrics
         self.period = group.period_s
         self.specific_host = group.specific_host
-        for metric in self.metrics:
-            # Need to generate with all labels here to have
-            # spot for automatically filled in labels (e.g. node)
-            metric.prometheus_metric = generate_prometheus_metric(metric, group.all_labels)
+
+        group.init_for_collector()
 
     @property
     def metric_names(self) -> str:
@@ -40,11 +38,10 @@ class MetricsGroupCollector:
                 try:
                     result = await client.fetch(self.query)
                     for metric in self.metrics:
-                        metric.prometheus_metric.clear()
-                    for line in result:
-                        labels = [line[label] for label in self.labels] + [node]
-                        for metric in self.metrics:
-                            metric.prometheus_metric.labels(*labels).__getattribute__(metric.observe_function)(line[metric.observation])
+                        metric.clear(node)
+                        for line in result:
+                            label_values = [line[label] for label in self.labels]
+                            metric.observe(node, label_values, line[metric.observation])
                 except ChClientError as e:
                     logger.exception(f"{self.metric_names}: Error while collecting metric: ", e)
                 except ClientError as e:
