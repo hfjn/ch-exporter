@@ -1,13 +1,13 @@
 from collections import defaultdict
-from pathlib import Path
-from typing import Any, List, Optional, Sequence
+from typing import Any, List, Optional, Sequence, Tuple
 
 import prometheus_client
-import yaml
 from loguru import logger
 from prometheus_client import Enum
 from prometheus_client.metrics_core import METRIC_TYPES
 from pydantic import BaseModel, PrivateAttr, root_validator, validator
+
+from ch_exporter.hosts import Host
 
 METRIC_FUNCTIONS = {
     "Summary": "observe",
@@ -61,10 +61,10 @@ class CHMetric(BaseModel):
         logger.debug(f"Creating Metric {self.prefixed_name} of type {self.metric} with labels {all_labels}")
         self._prometheus_metric = class_(self.prefixed_name, self.description, all_labels)
 
-    def observe(self, node: str, label_values: Sequence[str], value: Any):
-        all_label_values = tuple(str(v) for v in label_values) + (node,)
+    def observe(self, host: Host, label_values: Sequence[str], value: Any):
+        all_label_values = tuple(str(v) for v in label_values) + tuple(host.labels.values()) + (host.name,)g
         self._prometheus_metric.labels(*all_label_values).__getattribute__(self.observe_function)(value)
-        self._active_label_values_by_node[node].add(all_label_values)
+        self._active_label_values_by_node[host.name].add(all_label_values)
 
     def clear(self, node: str):
         for label_values in self._active_label_values_by_node[node]:
@@ -101,7 +101,8 @@ class CHMetric(BaseModel):
             return values
         if values.get("buckets") not in ["Exponential", "Linear"]:
             raise ValueError("Bucket can only be of Exponential or Linear Type")
-        if values.get("buckets") == "Exponential" and values.get("start") and values.get("factor") and values.get("count"):
+        if values.get("buckets") == "Exponential" and values.get("start") and values.get("factor") and values.get(
+                "count"):
             return values
         if values.get("buckets") == "Linear" and values.get("start") and values.get("size") and values.get("count"):
             return values
@@ -120,16 +121,9 @@ class ClickhouseMetricGroup(BaseModel):
     def all_labels(self) -> List[str]:
         return self.labels + DEFAULT_LABELS
 
-    def init_for_collector(self):
+    def init_for_collector(self, macros: Optional[List[str]] = None):
         for metric in self.metrics:
-            metric.init_for_collector(self.all_labels)
-
-class Metrics(BaseModel):
-    groups: List[ClickhouseMetricGroup]
-
-
-def load_metrics(path: Path) -> Metrics:
-    return Metrics(**yaml.safe_load(path.read_text()))
+            metric.init_for_collector(self.all_labels + macros)
 
 
 def _exponential_buckets(start: float, factor: float, count: int) -> List[float]:

@@ -1,3 +1,8 @@
+hosts:
+  - host: ch-01
+    labels:
+      -
+
 groups:
   - metrics:
       - name: tables_size_bytes
