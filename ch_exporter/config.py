@@ -16,14 +16,14 @@ class ExporterConfig(BaseSettings):
     ch_user: str
     ch_password: str
     ch_macros: Union[str, List[str]]
-    config_path: Path = "config.yaml"
+    metrics_path: Path = "metrics.yaml"
     prefix: str = "clickhouse_exporter"
     prometheus_port: int = 8080
     metrics: List[ClickhouseMetricGroup] = None
 
     def __init__(self, **data):
         super().__init__(**data)
-        config = yaml.safe_load(self.config_path.read_text())
+        config = yaml.safe_load(self.metrics_path.read_text())
         self.metrics = [ClickhouseMetricGroup(**group) for group in config.get("groups")]
 
     @validator("ch_hosts", pre=True)
