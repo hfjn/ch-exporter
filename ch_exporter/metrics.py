@@ -1,9 +1,9 @@
 from collections import defaultdict
-from typing import Any, List, Optional, Sequence, Tuple
+from typing import Any, List, Optional, Sequence
 
 import prometheus_client
 from loguru import logger
-from prometheus_client import Enum
+from prometheus_client import CollectorRegistry, Enum
 from prometheus_client.metrics_core import METRIC_TYPES
 from pydantic import BaseModel, PrivateAttr, root_validator, validator
 
@@ -56,13 +56,13 @@ class CHMetric(BaseModel):
     def observe_function(self) -> str:
         return METRIC_FUNCTIONS[self.metric]
 
-    def init_for_collector(self, all_labels: Sequence[str]):
+    def init_for_collector(self, registry: CollectorRegistry, all_labels: Sequence[str]):
         class_ = getattr(prometheus_client, self.metric)
         logger.debug(f"Creating Metric {self.prefixed_name} of type {self.metric} with labels {all_labels}")
-        self._prometheus_metric = class_(self.prefixed_name, self.description, all_labels)
+        self._prometheus_metric = class_(self.prefixed_name, self.description, all_labels, registry=registry)
 
     def observe(self, host: Host, label_values: Sequence[str], value: Any):
-        all_label_values = tuple(str(v) for v in label_values) + tuple(host.labels.values()) + (host.name,)g
+        all_label_values = tuple(str(v) for v in label_values) + tuple(host.labels.values()) + (host.name,)
         self._prometheus_metric.labels(*all_label_values).__getattribute__(self.observe_function)(value)
         self._active_label_values_by_node[host.name].add(all_label_values)
 
@@ -121,9 +121,9 @@ class ClickhouseMetricGroup(BaseModel):
     def all_labels(self) -> List[str]:
         return self.labels + DEFAULT_LABELS
 
-    def init_for_collector(self, macros: Optional[List[str]] = None):
+    def init_for_collector(self, registry: CollectorRegistry, macros: Optional[List[str]] = None):
         for metric in self.metrics:
-            metric.init_for_collector(self.all_labels + macros)
+            metric.init_for_collector(registry, self.all_labels + macros)
 
 
 def _exponential_buckets(start: float, factor: float, count: int) -> List[float]:

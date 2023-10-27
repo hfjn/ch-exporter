@@ -4,6 +4,7 @@ from aiochclient import ChClient, ChClientError
 from aiohttp import ClientError, ClientSession
 from loguru import logger
 from pendulum import now
+from prometheus_client import CollectorRegistry
 
 from ch_exporter.config import ExporterConfig
 from ch_exporter.hosts import Host
@@ -11,7 +12,7 @@ from ch_exporter.metrics import ClickhouseMetricGroup
 
 
 class MetricsGroupCollector:
-    def __init__(self, config: ExporterConfig, group: ClickhouseMetricGroup):
+    def __init__(self, registry: CollectorRegistry, config: ExporterConfig, group: ClickhouseMetricGroup):
         self._config = config
         self.query = group.query
         self.labels = group.labels
@@ -19,7 +20,7 @@ class MetricsGroupCollector:
         self.period = group.period_s
         self.specific_host = group.specific_host
 
-        group.init_for_collector(config.ch_macros)
+        group.init_for_collector(registry, config.ch_macros)
 
     @property
     def metric_names(self) -> str:
