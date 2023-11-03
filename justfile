@@ -4,8 +4,11 @@ version := `cat .version`
 install:
     poetry install
 
-run:
+dev:
     poetry run python3 main.py
+
+run:
+    poetry run gunicorn -b 127.0.0.1:8000 main:app -k uvicorn.workers.UvicornWorker --workers 1
 
 docker:
     docker run --env-file .env  hfjn/ch_exporter
