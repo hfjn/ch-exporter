@@ -1,3 +1,4 @@
+Dockerfile
 justfile
 .idea/
 .env
@@ -5,4 +6,3 @@ justfile
 .git/
 .gitignore
 .tool-versions
-metrics.yaml

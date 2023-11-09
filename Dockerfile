@@ -13,6 +13,6 @@ RUN poetry config virtualenvs.in-project true \
 
 USER 1000:1000
 
-CMD ["poetry", "run", "python", "/app/main.py"]
+CMD ["/app/.venv/bin/python3", "-m", "gunicorn", "-b", "127.0.0.1:8000", "main:app", "-k", "uvicorn.workers.UvicornWorker", "--workers", "1"]
 
 
