@@ -11,7 +11,7 @@ run:
     poetry run gunicorn -b 127.0.0.1:8000 main:app -k uvicorn.workers.UvicornWorker --workers 1
 
 docker:
-    docker run --env-file .env  hfjn/ch_exporter
+    docker run --env-file .env  docker.io/hfjn/ch_exporter:23.11.03
 
 build:
     docker build -t hfjn/ch_exporter:{{version}} -t hfjn/ch_exporter:latest .
