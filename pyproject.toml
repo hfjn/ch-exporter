@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ch-exporter"
-version = "23.11.03"
+version = "23.11.06"
 description = ""
 authors = ["Jannik Hoffjann <hi@hfjn.de>"]
 readme = "README.md"

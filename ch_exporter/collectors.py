@@ -20,7 +20,7 @@ class MetricsGroupCollector:
         self.period = group.period_s
         self.specific_host = group.specific_host
 
-        group.init_for_collector(registry, config.ch_macros)
+        group.init_for_collector(registry, [k for k in sorted(config.ch_macros)])
 
     @property
     def metric_names(self) -> str:

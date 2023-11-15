@@ -20,19 +20,6 @@ METRIC_FUNCTIONS = {
 DEFAULT_LABELS = ["clickhouse_node"]
 PREFIX = "ch_exporter"
 
-CLICKHOUSE_HEALTH = Enum(
-    PREFIX + "_node_health",
-    "Clickhouse Nodes Health Status",
-    states=["healthy", "unhealthy"],
-    labelnames=DEFAULT_LABELS,
-)
-CLICKHOUSE_REPLICATION_HEALTH = Enum(
-    PREFIX + "_replication_status",
-    "Clickhouse Nodes Replication Status",
-    states=["healthy", "unhealthy"],
-    labelnames=DEFAULT_LABELS,
-)
-
 
 class CHMetric(BaseModel):
     name: str
@@ -62,7 +49,7 @@ class CHMetric(BaseModel):
         self._prometheus_metric = class_(self.prefixed_name, self.description, all_labels, registry=registry)
 
     def observe(self, host: Host, label_values: Sequence[str], value: Any):
-        all_label_values = tuple(str(v) for v in label_values) + tuple(host.labels.values()) + (host.name,)
+        all_label_values = [str(v) for v in label_values] + [host.name] + host.macro_values
         self._prometheus_metric.labels(*all_label_values).__getattribute__(self.observe_function)(value)
         self._active_label_values_by_node[host.name].add(all_label_values)
 

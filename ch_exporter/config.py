@@ -52,7 +52,7 @@ async def load_hosts(config: ExporterConfig) -> List[Host]:
             if config.ch_macros:
                 macros = [f"'{macro}'" for macro in config.ch_macros]
                 result = await client.fetch(f"SELECT * FROM system.macros WHERE macro in ({','. join(macros)})")
-                h.labels = {macro["macro"]: macro["substitution"] for macro in result}
+                h.macros = {macro["macro"]: macro["substitution"] for macro in result}
                 hosts.append(h)
 
     return hosts

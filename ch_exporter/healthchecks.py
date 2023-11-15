@@ -1,11 +1,12 @@
 import asyncio
 import datetime
+from typing import List
 
 import aiohttp
 from loguru import logger
+from prometheus_client import Enum, CollectorRegistry
 
 from ch_exporter.hosts import Host
-from ch_exporter.metrics import CLICKHOUSE_HEALTH, CLICKHOUSE_REPLICATION_HEALTH
 
 
 async def _check_url(session, url) -> bool:
@@ -22,16 +23,17 @@ async def _check_url(session, url) -> bool:
         return False
 
 
-async def healthchecks(host: Host):
-    logger.debug("Starting healthchecks")
+async def healthcheck(host: Host, clickhouse_health: Enum, clickhouse_replication_health: Enum):
+    labels = [host.name] + host.macro_values
+    logger.info(f"Starting healthcheck with {labels}")
     while True:
         async with aiohttp.ClientSession() as session:
             if await _check_url(session, f"{host.url}/ping"):
-                CLICKHOUSE_HEALTH.labels(host).state("healthy")
+                clickhouse_health.labels(*labels).state("healthy")
                 host.node_healthy = True
                 logger.debug("Node healthy")
             else:
-                CLICKHOUSE_HEALTH.labels(host).state("unhealthy")
+                clickhouse_health.labels(*labels).state("unhealthy")
                 host.node_healthy = False
                 logger.debug("Node unhealthy")
 
@@ -39,11 +41,11 @@ async def healthchecks(host: Host):
                     session,
                     f"{host.url}/replicas_status",
             ):
-                CLICKHOUSE_REPLICATION_HEALTH.labels(host).state("healthy")
+                clickhouse_replication_health.labels(labels).state("healthy")
                 host.replication_healthy = True
                 logger.debug("Replication Status healthy")
             else:
-                CLICKHOUSE_REPLICATION_HEALTH.labels(host).state("unhealthy")
+                clickhouse_replication_health.labels(labels).state("unhealthy")
                 host.replication_healthy = False
                 logger.debug("Replication Status unhealthy")
             host.last_check = datetime.datetime.now()
